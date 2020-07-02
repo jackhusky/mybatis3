@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atguigu.mybatis.dynamicsql.dao.EmployeeMapperDynamic">
+
+    <select id="getEmpsByConditionIf" resultType="employee" >
+        select * from tbl_employee
+        <where>
+            <if test="id!=null">
+                id=#{id}
+            </if>
+            <if test="lastName!=null and lastName!=&quot;&quot;">
+                and last_name like #{lastName}
+            </if>
+            <if test="email!=null &amp;&amp; email.trim()!=&quot;&quot;">
+                and email=#{email}
+            </if>
+            <if test="gender!=null and gender!=&quot;&quot;">
+                and gender=#{gender}
+            </if>
+        </where>
+    </select>
+
+    <select id="getEmpsByConditionTrim" resultType="employee" >
+        select * from tbl_employee
+        <trim prefix="where" suffixOverrides="and">
+            <if test="id!=null">
+                id=#{id} and
+            </if>
+            <if test="lastName!=null and lastName!=&quot;&quot;">
+                last_name like #{lastName} and
+            </if>
+            <if test="email!=null &amp;&amp; email.trim()!=&quot;&quot;">
+                email=#{email} and
+            </if>
+            <if test="gender!=null and gender!=&quot;&quot;">
+                gender=#{gender}
+            </if>
+        </trim>
+    </select>
+
+    <select id="getEmpsByConditionChoose" resultType="employee">
+        select * from  tbl_employee
+        <where>
+            <choose>
+                <when test="id!=null">
+                    id=#{id}
+                </when>
+                <when test="lastName!=null">
+                    last_name like #{lastName}
+                </when>
+                <when test="email!=null">
+                    email=#{email}
+                </when>
+                <otherwise>
+                    gender=1
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <update id="updateEmp">
+        update tbl_employee
+        <set>
+            <if test="lastName!=null">
+                last_name=#{lastName},
+            </if>
+            <if test="email!=null">
+                email=#{email},
+            </if>
+            <if test="gender!=null">
+                gender=#{gender}
+            </if>
+        </set>
+        where id=#{id}
+    </update>
+
+    <select id="getEmpsByConditionForeach" resultType="employee">
+        select * from tbl_employee where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+    <insert id="addEmps">
+        insert into tbl_employee(last_name,email,gender) values
+        <foreach collection="emps" item="emp" separator=",">
+            (#{emp.lastName},#{emp.email},#{emp.gender})
+        </foreach>
+    </insert>
+    <!-- 这种方式需要数据库连接属性allowMultiQueries=true；
+	 	这种分号分隔多个sql可以用于其他的批量操作（删除，修改） -->
+    <!-- <insert id="addEmps">
+        <foreach collection="emps" item="emp" separator=";">
+            insert into tbl_employee(last_name,email,gender)
+            values(#{emp.lastName},#{emp.email},#{emp.gender})
+        </foreach>
+    </insert> -->
+
+    <select id="getEmpsTestInnerParameter" resultType="employee">
+        <!-- bind：可以将OGNL表达式的值绑定到一个变量中，方便后来引用这个变量的值 -->
+        <bind name="_lastName" value="'%'+lastName+'%'"/>
+            select * from tbl_employee
+            <if test="_parameter!=null">
+                where last_name like #{_lastName}
+        </if>
+    </select>
+
+    <!--
+	  	抽取可重用的sql片段。方便后面引用
+	  	1、sql抽取：经常将要查询的列名，或者插入用的列名抽取出来方便引用
+	  	2、include来引用已经抽取的sql：
+	  	3、include还可以自定义一些property，sql标签内部就能使用自定义的属性
+	  			include-property：取值的正确方式${prop},
+	  			#{不能使用这种方式}
+	  -->
+    <sql id="insertColumn">
+            last_name,email,gender
+    </sql>
+
+    <insert id="addEmp">
+        insert into tbl_employee(
+            <include refid="insertColumn">
+
+            </include>
+        ) values(#{lastName},#{email},#{gender})
+    </insert>
+</mapper>
